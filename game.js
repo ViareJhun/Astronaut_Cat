@@ -24,7 +24,7 @@ var tex = [];
 
 function loadTextures()
 {
-	tex_path['PlayerBullet1'] = 'img/bullet1.png';
+	tex_path['PlayerBullet1'] = 'img/Bullet1.png';
 	tex_path['star0'] = 'img/star0.png';
 	tex_path['star1'] = 'img/star1.png';
 	tex_path['star2'] = 'img/star2.png';
