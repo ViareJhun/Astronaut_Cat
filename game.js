@@ -2,6 +2,22 @@
 var surface = document.getElementById('surface');
 var context = surface.getContext('2d');
 
+// Color
+function color_interpolation(c1, c2, interpolation)
+{
+	interpolation = Math.max(
+		0.0,
+		Math.min(
+			1.0,
+			interpolation
+		)
+	);
+	
+	return '#' + dec2hexString(Math.floor((c1[0] + (c2[0] - c1[0]) * interpolation), 10)) +
+	dec2hexString(Math.floor(c1[1] + (c2[1] - c1[1]) * interpolation)) +
+	dec2hexString(Math.floor(c1[2] + (c2[2] - c1[2]) * interpolation))
+}
+
 // Textures
 var tex_path = [];
 var tex = [];
@@ -74,6 +90,36 @@ function shuffle(array)
 	}
 }
 
+// WITHOUT #!!
+function hex2arr(src)
+{
+	var r = parseInt(
+		src.slice(0, 2).toString(16),
+		16
+	);
+	var g = parseInt(
+		src.slice(2, 4).toString(16),
+		16
+	);
+	var b = parseInt(
+		src.slice(4, 6).toString(16),
+		16
+	);
+	
+	return [r, g, b]
+}
+
+function dec2hexString(dec)
+{
+   return (dec+0x100).toString(16).substr(-2).toUpperCase();
+}
+
+function choose(values)
+{
+	shuffle(values);
+	return values[0];
+}
+
 
 // Game
 // Player
@@ -95,9 +141,46 @@ function CreatePlayer()
 	this.anim_speed = 0.25;
 	this.anim_max = 6;
 	this.texture = 'cat0';
+	this.reload_max = 8;
+	this.reload = 0;
+	
 	
 	this.upd = () =>
 	{
+		// Shooting
+		if (mouse_check)
+		{
+			if (this.reload == 0)
+			{
+				this.reload = this.reload_max;
+				
+				objects.push(
+					new PlayerBullet(
+						this.x,
+						this.y,
+						3,
+						Math.PI * 0.5 + Math.random() * Math.PI * 0.025 * choose([-1, 1])
+					)
+				);
+			}
+		}
+		
+		this.reload = Math.max(0, this.reload - 1);
+		
+		// Moving
+		this.x += (
+			mouse_x - this.x
+		) * 0.15;
+		
+		this.x = Math.max(
+			this.half_width,
+			Math.min(
+				surface.width - this.half_width,
+				this.x
+			)
+		);
+		
+		// Animation
 		this.anim += this.anim_speed;
 		if (this.anim >= this.anim_max)
 		{
@@ -127,12 +210,36 @@ var player = new CreatePlayer();
 var mouse_x = 0;
 var mouse_y = 0;
 
+var mouse_check = 0;
+
 addEventListener(
 	'mousemove',
 	(e) =>
 	{
 		mouse_x = (e.clientX - xoffset) / asp;
 		mouse_y = (e.clientY - yoffset) / asp;
+	}
+);
+
+addEventListener(
+	'mousedown',
+	(e) =>
+	{
+		if (e.which == 1)
+		{
+			mouse_check = 1;
+		}
+	}
+);
+
+addEventListener(
+	'mouseup',
+	(e) =>
+	{
+		if (e.which == 1)
+		{
+			mouse_check = 0;
+		}
 	}
 );
 
@@ -153,6 +260,14 @@ addEventListener(
 		
 		mouse_x = (e.changedTouches[0].clientX - xoffset) / asp;
 		mouse_y = (e.changedTouches[0].clientY - yoffset) / asp;
+	}
+)
+
+addEventListener(
+	'touchend',
+	function (e)
+	{
+		mouse_check = 1
 	}
 )
 
@@ -191,14 +306,14 @@ function starCreate()
 // Objects
 var objects = [];
 
-function PlayerBullet(x, y, vecx, vecy, speed, angle)
+function PlayerBullet(x, y, speed, angle)
 {
 	this.x = x;
 	this.y = y;
-	this.vecx = vecx;
-	this.vecy = vecy;
 	this.speed = speed;
 	this.angle = angle;
+	this.vecx = Math.cos(angle) * speed;
+	this.vecy = -Math.sin(angle) * speed;
 	
 	this.texture = 'PlayerBullet1';
 	
@@ -212,10 +327,10 @@ function PlayerBullet(x, y, vecx, vecy, speed, angle)
 		this.y += this.vecy * this.speed;
 		
 		if (
-			((this.x - this.half_width) < 0) ||
-			((this.y - this.half_height) < 0) ||
-			((this.x + this.half_width) > surface.width) ||
-			((this.y + this.half_height) > surface.height)
+			((this.x - this.half_width) < -32) ||
+			((this.y - this.half_height) < -32) ||
+			((this.x + this.half_width) > surface.width + 32) ||
+			((this.y + this.half_height) > surface.height + 32)
 		)
 		{
 			return 1;
@@ -231,7 +346,7 @@ function PlayerBullet(x, y, vecx, vecy, speed, angle)
 			this.x,
 			this.y
 		);
-		context.rotate(this.angle);
+		context.rotate(-this.angle);
 		context.drawImage(
 			tex[this.texture],
 			-this.half_width,
@@ -254,9 +369,7 @@ function BackStar(star, speed)
 	
 	this.speed = speed + irandom(100) / 100 * Math.floor(speed * 0.2);
 	
-	var temp = [-1, 1];
-	shuffle(temp);
-	this.angle = -Math.PI * 0.5 + (irandom(10) / 100) * temp[0];
+	this.angle = -Math.PI * 0.5 + (irandom(10) / 100) * choose([-1, 1]);
 	
 	this.vecx = Math.cos(this.angle) * this.speed;
 	this.vecy = -Math.sin(this.angle) * this.speed;
@@ -332,6 +445,7 @@ function update()
 		}
 	)
 	
+	// Star 
 	back_time --;
 	if (back_time <= 0)
 	{
