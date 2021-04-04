@@ -267,7 +267,7 @@ addEventListener(
 	'touchend',
 	function (e)
 	{
-		mouse_check = 1
+		mouse_check = 0
 	}
 )
 
