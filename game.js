@@ -66,6 +66,8 @@ function loadTextures()
 	tex_path['bullet1d2'] = 'img/bullet1d2.png';
 	tex_path['bullet1d3'] = 'img/bullet1d3.png';
 	
+	tex_path['back'] = 'img/back.png';
+	
 	Object.keys(tex_path).forEach(
 		(item) =>
 		{
@@ -358,6 +360,7 @@ addEventListener(
 // Background
 var back_time_max = 15;
 var back_time = back_time_max;
+/*
 var back_gradient = context.createLinearGradient(
 	0,
 	0,
@@ -366,6 +369,7 @@ var back_gradient = context.createLinearGradient(
 );
 back_gradient.addColorStop(0, '#000000');
 back_gradient.addColorStop(1, '#48084E');
+*/
 var back_objects = [];
 var back_show = 1;
 
@@ -1077,12 +1081,19 @@ function paint()
 {
 	update();
 	
+	/*
 	context.fillStyle = back_gradient;
 	context.fillRect(
 		0,
 		0,
 		surface.width,
 		surface.height
+	);
+	*/
+	context.drawImage(
+		tex['back'],
+		0,
+		0
 	);
 	
 	if (back_show)
