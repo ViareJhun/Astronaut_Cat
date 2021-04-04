@@ -26,6 +26,12 @@ function loadTextures()
 {
 	tex_path['PlayerBullet1'] = 'img/Bullet1.png';
 	
+	tex_path['button1test'] = 'img/button1test.png';
+	tex_path['button2test'] = 'img/button2test.png';
+	
+	tex_path['ontest'] = 'img/ontest.png';
+	tex_path['offtest'] = 'img/offtest.png';
+	
 	tex_path['star0'] = 'img/star0.png';
 	tex_path['star1'] = 'img/star1.png';
 	tex_path['star2'] = 'img/star2.png';
@@ -151,6 +157,40 @@ function distance(x1, y1, x2, y2)
 	);
 }
 
+// TEST
+function testButtons()
+{
+	if (mouse_x > 0 && mouse_y > 0 && mouse_x < 33 && mouse_y < 33)
+	{
+		spawn.level = 0;
+		spawn.progress = 0;
+		spawn.progress_speed = spawn.speeds[0];
+		
+		player.bullet_spread = Math.PI * 0.01;
+		player.bullets = 1;
+		player.reload_max = 12;
+	}
+	else if (mouse_x > 32 && mouse_y > 0 && mouse_x < 65 && mouse_y < 33)
+	{
+		spawn.level = 10;
+		spawn.progress = 0;
+		spawn.progress_speed = spawn.speeds[9];
+		
+		player.bullet_spread = Math.PI * 0.07;
+		player.bullets = 3;
+		player.reload_max = 8;
+	}
+	else if (mouse_x > 64 && mouse_y > 0 && mouse_x < 97 && mouse_y < 33)
+	{
+		back_show = 1;
+	}
+	else if (mouse_x > 96 && mouse_y > 0 && mouse_x < 129 && mouse_y < 33)
+	{
+		back_show = 0;
+		back_objects = [];
+	}
+}
+
 
 // Game
 var DEBUG = 0;
@@ -177,6 +217,7 @@ function CreatePlayer()
 	this.reload_max = 12;
 	this.reload = 0;
 	this.bullet_spread = Math.PI * 0.01;
+	this.bullets = 1;
 	
 	
 	this.upd = () =>
@@ -188,14 +229,17 @@ function CreatePlayer()
 			{
 				this.reload = this.reload_max;
 				
-				bullets.push(
-					new PlayerBullet(
-						this.x,
-						this.y - this.half_height,
-						4,
-						Math.PI * 0.5 + Math.random() * this.bullet_spread * choose([-1, 1])
-					)
-				);
+				for (var i = 0; i < this.bullets; i ++)
+				{
+					bullets.push(
+						new PlayerBullet(
+							this.x,
+							this.y - this.half_height,
+							4,
+							Math.PI * 0.5 + Math.random() * this.bullet_spread * choose([-1, 1])
+						)
+					);
+				};
 			}
 		}
 		
@@ -273,6 +317,9 @@ addEventListener(
 		if (e.which == 1)
 		{
 			mouse_check = 0;
+			
+			// TEST
+			testButtons();
 		}
 	}
 );
@@ -302,6 +349,9 @@ addEventListener(
 	function (e)
 	{
 		mouse_check = 0
+		
+		// TEST
+		testButtons();
 	}
 )
 
@@ -317,6 +367,7 @@ var back_gradient = context.createLinearGradient(
 back_gradient.addColorStop(0, '#000000');
 back_gradient.addColorStop(1, '#48084E');
 var back_objects = [];
+var back_show = 1;
 
 function starCreate()
 {
@@ -343,14 +394,79 @@ var enemies = [];
 
 function Spawner()
 {
+	this.level = 0;
+	
+	this.progress = 0;
+	this.progress_max = 100;
+	
+	this.progress_speed = 0.05;
+	
+	this.speeds = [
+		0.060,
+		0.050,
+		0.040,
+		0.035,
+		0.030,
+		0.026,
+		0.022,
+		0.018,
+		0.016,
+		0.015
+	];
+	
+	// Bot
 	this.bot_spawn_max = 120;
 	this.bot_spawn = irandom(this.bot_spawn_max);
 	
+	this.bot_diff = 1.0;
+	
+	this.bots_diffs = [
+		1.0,
+		0.9,
+		0.9,
+		0.9,
+		0.5,
+		0.4,
+		0.3,
+		0.3,
+		0.2,
+		0.1
+	];
+	
+	// Ram
 	this.ram_max = 300;
 	this.ram = irandom(this.ram_max);
 	
+	this.ram_diff_start = 0.5;
+	this.ram_diff = this.ram_diff_start;
+	
+	this.ram_diffs = [
+		1.0,
+		1.0,
+		1.0,
+		1.0,
+		1.0,
+		0.8,
+		0.5,
+		0.3,
+		0.2,
+		0.1
+	];
+	
+	
 	this.upd = () =>
 	{
+		// Progress
+		this.progress += this.progress_speed;
+		if (this.progress >= this.progress_max)
+		{
+			this.progress = 0;
+			this.level += 1;
+			this.progress_speed = this.speeds[Math.min(9, this.level)];
+		}
+		this.bot_diff = this.bots_diffs[Math.min(9, this.level)];
+		this.ram_diff = this.ram_diffs[Math.min(9, this.level)];
+		
 		// Bot
 		if (this.bot_spawn > 0)
 		{
@@ -358,7 +474,7 @@ function Spawner()
 		}
 		else
 		{
-			this.bot_spawn = this.bot_spawn_max;
+			this.bot_spawn = this.bot_spawn_max * this.bot_diff;
 			
 			enemies.push(
 				new RamBot(
@@ -367,24 +483,74 @@ function Spawner()
 					//16 + irandom(surface.width - 32)
 				)
 			);
-		}
+		};
 		
 		// RamBot2
-		if (this.ram > 0)
+		if (this.level >= 1)
 		{
-			this.ram --;
-		}
-		else
-		{
-			this.ram = this.ram_max;
-			
-			enemies.push(
-				new RamBot2(
-					48 + irandom(surface.width - 96),
-					-32
-				)
-			);
-		}
+			if (this.ram > 0)
+			{
+				this.ram --;
+			}
+			else
+			{
+				this.ram = this.ram_max * this.ram_diff;
+				
+				enemies.push(
+					new RamBot2(
+						48 + irandom(surface.width - 96),
+						-32
+					)
+				);
+			};
+		};
+	};
+	
+	this.draw = () =>
+	{
+		
+		context.font = '20px consolas';
+		
+		context.textBaseline = 'middle';
+		context.textAlign = 'center';
+		
+		var x = 250;
+		var y = 80;
+		
+		var w = 240;
+		var h = 20;
+		
+		var txt = 'LEVEL = ' + this.level + ' SPEED = ' + this.progress_speed;
+		
+		context.fillStyle = '#000000';
+		context.fillRect(
+			x - w * 0.5,
+			y - h * 0.5,
+			w,
+			h
+		);
+		
+		context.fillStyle = '#00AA22';
+		context.fillRect(
+			x - w * 0.5,
+			y - h * 0.5,
+			w * this.progress / this.progress_max,
+			h
+		);
+		
+		context.fillStyle = '#000000';
+		context.fillText(
+			txt,
+			x,
+			y + 2
+		);
+		
+		context.fillStyle = '#FFFFFF';
+		context.fillText(
+			txt,
+			x,
+			y
+		);
 	};
 }
 var spawn = new Spawner();
@@ -842,62 +1008,65 @@ function update()
 	)
 	
 	// Background
-	back_objects.forEach(
-		(obj) =>
-		{
-			switch (obj.upd())
+	if (back_show)
+	{
+		back_objects.forEach(
+			(obj) =>
 			{
+				switch (obj.upd())
+				{
+					case 1:
+					{
+						var num = back_objects.indexOf(obj);
+						delete back_objects[num];
+						back_objects.splice(num, 1);
+					}
+					break;
+				}
+			}
+		)
+		
+		// Star 
+		back_time --;
+		if (back_time <= 0)
+		{
+			var temp = Math.floor(back_time_max * 0.5);
+			
+			switch (irandom(2))
+			{
+				case 0:
+				{
+					back_time = temp + irandom(temp);
+					
+					back_objects.push(
+						new BackStar(
+							[
+								'star0'
+							],
+							2
+						)
+					);
+				}
+				break;
+				
+				
 				case 1:
 				{
-					var num = back_objects.indexOf(obj);
-					delete back_objects[num];
-					back_objects.splice(num, 1);
+					back_time = temp + irandom(temp);
+					
+					back_objects.push(
+						new BackStar(
+							[
+								'star1',
+								'star2',
+								'star3'
+							],
+							4
+						)
+					);
 				}
 				break;
 			}
-		}
-	)
-	
-	// Star 
-	back_time --;
-	if (back_time <= 0)
-	{
-		var temp = Math.floor(back_time_max * 0.5);
-		
-		switch (irandom(2))
-		{
-			case 0:
-			{
-				back_time = temp + irandom(temp);
-				
-				back_objects.push(
-					new BackStar(
-						[
-							'star0'
-						],
-						2
-					)
-				);
-			}
-			break;
-			
-			
-			case 1:
-			{
-				back_time = temp + irandom(temp);
-				
-				back_objects.push(
-					new BackStar(
-						[
-							'star1',
-							'star2',
-							'star3'
-						],
-						4
-					)
-				);
-			}
-			break;
 		}
 	}
 }
@@ -916,12 +1085,15 @@ function paint()
 		surface.height
 	);
 	
-	back_objects.forEach(
-		(obj) =>
-		{
-			obj.draw();
-		}
-	)
+	if (back_show)
+	{
+		back_objects.forEach(
+			(obj) =>
+			{
+				obj.draw();
+			}
+		)
+	}
 	
 	enemies.forEach(
 		(obj) =>
@@ -950,6 +1122,15 @@ function paint()
 		-8
 	);
 	context.restore();
+	
+	// GUI
+	spawn.draw();
+	
+	// TEST
+	context.drawImage(tex['button1test'], 0, 0);
+	context.drawImage(tex['button2test'], 32, 0);
+	context.drawImage(tex['ontest'], 64, 0);
+	context.drawImage(tex['offtest'], 96, 0);
 	
 	requestAnimationFrame(paint);
 }
