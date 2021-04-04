@@ -25,17 +25,40 @@ var tex = [];
 function loadTextures()
 {
 	tex_path['PlayerBullet1'] = 'img/Bullet1.png';
+	
 	tex_path['star0'] = 'img/star0.png';
 	tex_path['star1'] = 'img/star1.png';
 	tex_path['star2'] = 'img/star2.png';
 	tex_path['star3'] = 'img/star3.png';
+	
 	tex_path['cat0'] = 'img/cat0.png';
 	tex_path['cat1'] = 'img/cat1.png';
 	tex_path['cat2'] = 'img/cat2.png';
 	tex_path['cat3'] = 'img/cat3.png';
 	tex_path['cat4'] = 'img/cat4.png';
 	tex_path['cat5'] = 'img/cat5.png';
+	
 	tex_path['cursor'] = 'img/cursor.png';
+	
+	tex_path['bot0'] = 'img/bot0.png';
+	tex_path['bot1'] = 'img/bot1.png';
+	tex_path['bot2'] = 'img/bot2.png';
+	tex_path['bot3'] = 'img/bot3.png';
+	tex_path['bot4'] = 'img/bot4.png';
+	tex_path['bot5'] = 'img/bot5.png';
+	tex_path['bot6'] = 'img/bot6.png';
+	
+	tex_path['bot2r0'] = 'img/bot2r0.png';
+	tex_path['bot2r1'] = 'img/bot2r1.png';
+	tex_path['bot2r2'] = 'img/bot2r2.png';
+	tex_path['bot2r3'] = 'img/bot2r3.png';
+	tex_path['bot2r4'] = 'img/bot2r4.png';
+	tex_path['bot2r5'] = 'img/bot2r5.png';
+	
+	tex_path['bullet1d0'] = 'img/bullet1d0.png';
+	tex_path['bullet1d1'] = 'img/bullet1d1.png';
+	tex_path['bullet1d2'] = 'img/bullet1d2.png';
+	tex_path['bullet1d3'] = 'img/bullet1d3.png';
 	
 	Object.keys(tex_path).forEach(
 		(item) =>
@@ -120,8 +143,18 @@ function choose(values)
 	return values[0];
 }
 
+function distance(x1, y1, x2, y2)
+{
+	return Math.sqrt(
+		(x1 - x2) * (x1 - x2) +
+		(y1 - y2) * (y1 - y2)
+	);
+}
+
 
 // Game
+var DEBUG = 0;
+
 // Player
 function CreatePlayer()
 {
@@ -141,8 +174,9 @@ function CreatePlayer()
 	this.anim_speed = 0.25;
 	this.anim_max = 6;
 	this.texture = 'cat0';
-	this.reload_max = 8;
+	this.reload_max = 12;
 	this.reload = 0;
+	this.bullet_spread = Math.PI * 0.01;
 	
 	
 	this.upd = () =>
@@ -154,12 +188,12 @@ function CreatePlayer()
 			{
 				this.reload = this.reload_max;
 				
-				objects.push(
+				bullets.push(
 					new PlayerBullet(
 						this.x,
-						this.y,
-						3,
-						Math.PI * 0.5 + Math.random() * Math.PI * 0.025 * choose([-1, 1])
+						this.y - this.half_height,
+						4,
+						Math.PI * 0.5 + Math.random() * this.bullet_spread * choose([-1, 1])
 					)
 				);
 			}
@@ -303,8 +337,262 @@ function starCreate()
 	}
 }
 
-// Objects
-var objects = [];
+
+// Enemies
+var enemies = [];
+
+function Spawner()
+{
+	this.bot_spawn_max = 120;
+	this.bot_spawn = irandom(this.bot_spawn_max);
+	
+	this.ram_max = 300;
+	this.ram = irandom(this.ram_max);
+	
+	this.upd = () =>
+	{
+		// Bot
+		if (this.bot_spawn > 0)
+		{
+			this.bot_spawn --;
+		}
+		else
+		{
+			this.bot_spawn = this.bot_spawn_max;
+			
+			enemies.push(
+				new RamBot(
+					16 + irandom(surface.width - 32),
+					-32
+					//16 + irandom(surface.width - 32)
+				)
+			);
+		}
+		
+		// RamBot2
+		if (this.ram > 0)
+		{
+			this.ram --;
+		}
+		else
+		{
+			this.ram = this.ram_max;
+			
+			enemies.push(
+				new RamBot2(
+					48 + irandom(surface.width - 96),
+					-32
+				)
+			);
+		}
+	};
+}
+var spawn = new Spawner();
+
+function RamBot(x, y)
+{
+	this.x = x;
+	this.y = y;
+	
+	this.hp_max = 2;
+	this.hp = this.hp_max;
+	
+	this.speed = 2;
+	this.angle = -Math.PI * 0.5;
+	
+	this.vecx = Math.cos(this.angle) * this.speed;
+	this.vecy = -Math.sin(this.angle) * this.speed;
+	
+	this.half_width = 32;
+	this.half_height = 32;
+	
+	this.radius = 30;
+	
+	this.texture = 'bot0';
+	
+	this.anim = 0;
+	this.anim_speed = 0.25;
+	this.anim_max = 7;
+	this.anims = [
+		'bot0',
+		'bot1',
+		'bot2',
+		'bot3',
+		'bot4',
+		'bot5',
+		'bot6'
+	];
+	
+	
+	this.upd = () =>
+	{
+		this.x += this.vecx;
+		this.y += this.vecy;
+		
+		this.vecx = Math.cos(this.angle) * this.speed;
+		this.vecy = -Math.sin(this.angle) * this.speed;
+		
+		this.speed += 0.03;
+		
+		this.anim += this.anim_speed;
+		if (this.anim >= this.anim_max)
+		{
+			this.anim = 0;
+		}
+		
+		this.texture = this.anims[Math.floor(this.anim)];
+		
+		if (this.y > surface.height + 32)
+		{
+			return 1;
+		}
+		
+		if (this.hp <= 0)
+		{
+			return 1;
+		}
+		
+		return 0;
+	};
+	
+	this.draw = () =>
+	{
+		context.save();
+		context.translate(
+			this.x,
+			this.y
+		);
+		context.drawImage(
+			tex[this.texture],
+			-this.half_width,
+			-this.half_height
+		);
+		
+		if (DEBUG)
+		{
+			context.strokeStyle = '#FF0000';
+			
+			context.beginPath();
+			context.arc(
+				0,
+				0,
+				this.radius,
+				0,
+				Math.PI * 2
+			);
+			context.stroke();
+		}
+		
+		context.restore();
+	};
+}
+
+function RamBot2(x, y)
+{
+	this.x = x;
+	this.y = y;
+	
+	this.xstart = x;
+	
+	this.time = Math.random();
+	
+	this.hp_max = 4;
+	this.hp = this.hp_max;
+	
+	this.speed = 1;
+	this.angle = -Math.PI * 0.5;
+	
+	this.vecx = 0;
+	this.vecy = -Math.sin(this.angle) * this.speed;
+	
+	this.half_width = 32;
+	this.half_height = 32;
+	
+	this.radius = 30;
+	
+	this.texture = 'bot2r0';
+	
+	this.anim = 0;
+	this.anim_speed = 0.25;
+	this.anim_max = 6;
+	this.anims = [
+		'bot2r0',
+		'bot2r1',
+		'bot2r2',
+		'bot2r3',
+		'bot2r4',
+		'bot2r5'
+	];
+	
+	
+	this.upd = () =>
+	{
+		this.y += this.vecy;
+		
+		this.time += 0.05;
+		
+		this.x = this.xstart + Math.sin(this.time) * 64;
+		
+		this.vecx = Math.cos(this.angle) * this.speed;
+		this.vecy = -Math.sin(this.angle) * this.speed;
+		
+		this.speed += 0.02;
+		
+		this.anim += this.anim_speed;
+		if (this.anim >= this.anim_max)
+		{
+			this.anim = 0;
+		}
+		
+		this.texture = this.anims[Math.floor(this.anim)];
+		
+		if (this.y > surface.height + 32)
+		{
+			return 1;
+		}
+		
+		if (this.hp <= 0)
+		{
+			return 1;
+		}
+		
+		return 0;
+	};
+	
+	this.draw = () =>
+	{
+		context.save();
+		context.translate(
+			this.x,
+			this.y
+		);
+		context.drawImage(
+			tex[this.texture],
+			-this.half_width,
+			-this.half_height
+		);
+		
+		if (DEBUG)
+		{
+			context.strokeStyle = '#FF0000';
+			
+			context.beginPath();
+			context.arc(
+				0,
+				0,
+				this.radius,
+				0,
+				Math.PI * 2
+			);
+			context.stroke();
+		}
+		
+		context.restore();
+	};
+}
+
+// Bullets
+var bullets = [];
 
 function PlayerBullet(x, y, speed, angle)
 {
@@ -315,16 +603,22 @@ function PlayerBullet(x, y, speed, angle)
 	this.vecx = Math.cos(angle) * speed;
 	this.vecy = -Math.sin(angle) * speed;
 	
+	this.side = 'player';
+	
 	this.texture = 'PlayerBullet1';
 	
-	this.half_width = 8;
-	this.half_height = 8;
+	this.half_width = 11;
+	this.half_height = 6;
+	
+	this.radius = 12;
 	
 	
 	this.upd = () =>
 	{
 		this.x += this.vecx * this.speed;
 		this.y += this.vecy * this.speed;
+		
+		var resul = 0;
 		
 		if (
 			((this.x - this.half_width) < -32) ||
@@ -333,10 +627,36 @@ function PlayerBullet(x, y, speed, angle)
 			((this.y + this.half_height) > surface.height + 32)
 		)
 		{
-			return 1;
+			resul = 1;
 		}
 		
-		return 0;
+		if (this.side == 'player')
+		{
+			enemies.forEach(
+				(enemy) =>
+				{
+					if (distance(this.x, this.y, enemy.x, enemy.y) < this.radius + enemy.radius)
+					{
+						enemy.hp --;
+						resul = 1;
+					}
+				}
+			)
+		}
+		
+		if (resul == 1)
+		{
+			bullets.splice(
+				0,
+				0,
+				new Bullet1Destroy(
+					this.x,
+					this.y
+				)
+			)
+		}
+		
+		return resul;
 	};
 	
 	this.draw = () =>
@@ -352,6 +672,81 @@ function PlayerBullet(x, y, speed, angle)
 			-this.half_width,
 			-this.half_height
 		);
+		
+		if (DEBUG)
+		{
+			context.strokeStyle = '#FF0000';
+			
+			context.beginPath();
+			context.arc(
+				0,
+				0,
+				this.radius,
+				0,
+				Math.PI * 2
+			);
+			context.stroke();
+		}
+		
+		context.restore();
+	};
+}
+
+function Bullet1Destroy(x, y)
+{
+	this.x = x;
+	this.y = y;
+	
+	this.angle = Math.random() * Math.PI * 2.0;
+	
+	this.half_width = 32;
+	this.half_height = 32;
+	
+	this.anim = 0;
+	this.anim_max = 4;
+	this.anim_speed = 0.25;
+	
+	this.texture = 'bullet1d0';
+	
+	this.anims = [
+		'bullet1d0',
+		'bullet1d1',
+		'bullet1d2',
+		'bullet1d3'
+	];
+	
+	
+	this.upd = () =>
+	{
+		this.anim += this.anim_speed;
+		if (this.anim >= this.anim_max)
+		{
+			this.anim = 0;
+			return 1;
+		}
+		
+		this.texture = this.anims[Math.floor(this.anim)];
+		
+		return 0;
+	};
+	
+	this.draw = () =>
+	{
+		context.save();
+		
+		context.translate(
+			this.x,
+			this.y
+		);
+		
+		context.rotate(this.angle);
+		
+		context.drawImage(
+			tex[this.texture],
+			-this.half_width,
+			-this.half_height
+		);
+		
 		context.restore();
 	};
 }
@@ -412,16 +807,34 @@ function update()
 	player.upd();
 	
 	// Objects
-	objects.forEach(
+	spawn.upd();
+	
+	enemies.forEach(
 		(obj) =>
 		{
 			switch (obj.upd())
 			{
 				case 1:
 				{
-					var num = objects.indexOf(obj);
-					delete objects[num];
-					objects.splice(num, 1);
+					var num = enemies.indexOf(obj);
+					delete enemies[num];
+					enemies.splice(num, 1);
+				}
+				break;
+			}
+		}
+	)
+	
+	bullets.forEach(
+		(obj) =>
+		{
+			switch (obj.upd())
+			{
+				case 1:
+				{
+					var num = bullets.indexOf(obj);
+					delete bullets[num];
+					bullets.splice(num, 1);
 				}
 				break;
 			}
@@ -510,7 +923,14 @@ function paint()
 		}
 	)
 	
-	objects.forEach(
+	enemies.forEach(
+		(obj) =>
+		{
+			obj.draw();
+		}
+	)
+	
+	bullets.forEach(
 		(obj) =>
 		{
 			obj.draw();
