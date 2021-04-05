@@ -1832,7 +1832,20 @@ function paint()
 }
 
 
+// VK
+function vkInit()
+{
+	vkBridge.send('VKWebAppInit');
+	
+	vkBridge.send("VKWebAppShowNativeAds", {ad_format:"preloader"})
+	.then(data => console.log(data.result))
+	.catch(error => console.log(error));
+}
+
+
 // Start
+vkInit();
+
 loadTextures();
 starCreate();
 setScreen();
