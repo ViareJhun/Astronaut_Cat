@@ -72,6 +72,7 @@ function loadTextures()
 	tex_path['big1'] = 'img/big1.png';
 	tex_path['big2'] = 'img/big2.png';
 	tex_path['big3'] = 'img/big3.png';
+	tex_path['bigmask'] = 'img/bigmask.png';
 	
 	tex_path['ebullet1'] = 'img/ebullet1.png';
 	
@@ -515,7 +516,7 @@ function CreatePlayer()
 				this.rage --;
 			}
 			
-			if (mouse_check)
+			if (1) //(mouse_check)
 			{
 				if (this.reload == 0)
 				{
@@ -721,6 +722,14 @@ function Spawner()
 	this.bonus_y = 0;
 	this.bonus_radius = 32;
 	
+	this.texts = [];
+	
+	
+	// Tutorial
+	this.tut = 0;
+	this.tut_alpha = 0;
+	this.tut_time = 60 * 5;
+	
 	
 	this.level = 0;
 	
@@ -751,18 +760,21 @@ function Spawner()
 	this.bots_diffs = [
 		1.0,
 		1.0,
+		0.6,
 		0.5,
-		0.3,
 		0.6,
 		0.5,
 		0.4,
 		0.3,
 		0.2,
-		0.15
+		0.2,
+		0.2,
+		0.2,
+		0.1
 	];
 	
 	// Ram
-	this.ram_max = 250;
+	this.ram_max = 260;
 	this.ram = irandom(this.ram_max);
 	
 	this.ram_diff_start = 0.5;
@@ -785,7 +797,7 @@ function Spawner()
 	];
 	
 	// Shooter
-	this.sh_max = 130;
+	this.sh_max = 200;
 	this.sh = irandom(this.sh_max);
 	
 	this.sh_diff = 1.0;
@@ -810,7 +822,7 @@ function Spawner()
 	];
 	
 	// BigBot
-	this.big_max = 200;
+	this.big_max = 250;
 	this.big = irandom(this.big_max);
 	
 	this.big_diff = 1.0;
@@ -1091,6 +1103,49 @@ function Spawner()
 			);
 			context.restore();
 		}
+		
+		// Scores
+		context.font = 'bold 15px "Press Start 2P"';
+		context.textAlign = 'center';
+		context.textBaseline = 'middle';
+		context.fillStyle = '#C0E3F8';
+		
+		this.texts.forEach(
+			(txt) =>
+			{
+				txt[0] --;
+				
+				if (txt[0] <= 0)
+				{
+					var num = this.texts.indexOf(txt);
+					delete this.texts[num];
+					this.texts.splice(num, 1);
+				}
+				else
+				{
+					txt[1] += (
+						1.0 - txt[1]
+					) * 0.1;
+					
+					context.save();
+					context.translate(
+						txt[2],
+						txt[3]
+					);
+					context.scale(
+						txt[1],
+						txt[1]
+					);
+					context.fillText(
+						txt[4],
+						0,
+						0
+					);
+					context.restore();
+				}
+			}
+		);
+		
 		// Level
 		T1 += 0.05;
 		context.textAlign = 'left';
@@ -1257,6 +1312,83 @@ function Spawner()
 		}
 		
 		context.globalAlpha = 1.0;
+		
+		// Tutorial
+		if (this.tut == 0)
+		{
+			if (this.tut_alpha < 1)
+			{
+				this.tut_alpha += 0.01;
+			}
+			else
+			{
+				this.tut = 1;
+			}
+		}
+		else
+		{
+			if (this.tut_time > 0)
+			{
+				this.tut_time --;
+			}
+			else
+			{
+				if (this.tut_alpha > 0)
+				{
+					this.tut_alpha -= 0.01;
+				}
+				else
+				{
+					this.tut_alpha = 0;
+					this.tut = 2;
+				}
+			}
+		}
+		
+		if (this.tut < 2)
+		{
+			context.globalAlpha = Math.max(0, this.tut_alpha) * 0.6;
+			
+			context.font = 'bold 18px "Press Start 2P"';
+			
+			context.textAlign = 'center';
+			context.textBaseline = 'middle';
+			
+			context.fillStyle = '#FFFFFF';
+			
+			context.save();
+			context.translate(
+				surface.width * 0.5,
+				surface.height * 0.4
+			);
+			context.fillText(
+				'Проведи пальцем или мышью,',
+				0,
+				0
+			);
+			context.fillText(
+				'чтобы двигаться',
+				0,
+				32
+			);
+			
+			context.font = 'bold 20px "Press Start 2P"';
+			context.fillStyle = '#FFFFFF';
+			context.fillText(
+				'НЕ ДОПУСКАЙ, ЧТОБЫ ВРАГИ',
+				0,
+				256
+			);
+			context.fillText(
+				'ДОСТИГЛИ ДНА!!!',
+				0,
+				256 + 32
+			);
+			
+			context.restore();
+			
+			context.globalAlpha = 1;
+		}
 	};
 }
 var spawn = null;
@@ -1266,6 +1398,7 @@ function RamBot(x, y)
 	this.x = x;
 	this.y = y;
 	this.type = 'enemy';
+	this.mask_alpha = 0;
 	
 	this.hp_max = 1;
 	this.hp = this.hp_max;
@@ -1325,7 +1458,11 @@ function RamBot(x, y)
 			
 			if (this.hp <= 0)
 			{
-				score += choose([10, 15]);
+				var temp = choose([10, 15]);
+				score += temp;
+				spawn.texts.push(
+					[60, 2.5, this.x, this.y, '+' + temp]
+				);
 				return 1;
 			}
 			
@@ -1370,6 +1507,7 @@ function BigBot(x, y)
 	this.x = x;
 	this.y = y;
 	this.type = 'enemy';
+	this.mask_alpha = 0;
 	
 	this.hp_max = 6;
 	this.hp = this.hp_max;
@@ -1402,6 +1540,8 @@ function BigBot(x, y)
 	{
 		if (!PAUSE)
 		{
+			this.mask_alpha = Math.max(0, this.mask_alpha - 0.05);
+			
 			this.x += this.vecx;
 			this.y += this.vecy;
 			
@@ -1424,7 +1564,11 @@ function BigBot(x, y)
 			
 			if (this.hp <= 0)
 			{
-				score += choose([50, 55]);
+				var temp = choose([50, 55]);
+				score += temp;
+				spawn.texts.push(
+					[60, 2.5, this.x, this.y, '+' + temp]
+				);
 				return 1;
 			}
 			
@@ -1444,6 +1588,14 @@ function BigBot(x, y)
 			-this.half_width,
 			-this.half_height
 		);
+		
+		context.globalAlpha = this.mask_alpha;
+		context.drawImage(
+			tex['bigmask'],
+			-this.half_width,
+			-this.half_height
+		);
+		context.globalAlpha = 1.0;
 		
 		if (DEBUG)
 		{
@@ -1469,6 +1621,7 @@ function RamBot2(x, y)
 	this.x = x;
 	this.y = y;
 	this.type = 'enemy';
+	this.mask_alpha = 0;
 	
 	this.xstart = x;
 	
@@ -1534,7 +1687,11 @@ function RamBot2(x, y)
 			
 			if (this.hp <= 0)
 			{
-				score += choose([70, 75]);
+				var temp = choose([70, 75]);
+				score += temp;
+				spawn.texts.push(
+					[60, 2.5, this.x, this.y, '+' + temp]
+				);
 				return 1;
 			}
 			
@@ -1579,6 +1736,7 @@ function Shooter(x, y)
 	this.x = x;
 	this.y = y;
 	this.type = 'enemy';
+	this.mask_alpha = 0;
 	
 	this.time = Math.random();
 	
@@ -1691,7 +1849,11 @@ function Shooter(x, y)
 			
 			if (this.hp <= 0)
 			{
-				score += choose([60, 65]);
+				var temp = choose([60, 65]);
+				score += temp;
+				spawn.texts.push(
+					[60, 2.5, this.x, this.y, '+' + temp]
+				);
 				return 1;
 			}
 			
@@ -1842,6 +2004,7 @@ function PlayerBullet(x, y, speed, angle)
 					if (distance(this.x, this.y, enemy.x, enemy.y) < this.radius + enemy.radius)
 					{
 						enemy.hp --;
+						enemy.mask_alpha = 1.0;
 						resul = 1;
 					}
 				}
