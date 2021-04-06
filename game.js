@@ -121,6 +121,9 @@ function loadTextures()
 	tex_path['particle4'] = 'img/particle4.png';
 	tex_path['particle5'] = 'img/particle5.png';
 	
+	tex_path['group'] = 'img/group.png';
+	tex_path['share'] = 'img/share.png';
+	
 	Object.keys(tex_path).forEach(
 		(item) =>
 		{
@@ -290,6 +293,12 @@ function gotoMenu()
 	{
 		max_score = 0;
 	}
+	
+	if (score > max_score)
+	{
+		max_score = score;
+		localStorage.setItem('AsCatScore', max_score);
+	}
 }
 
 function loosing()
@@ -454,6 +463,28 @@ function menuMouseUp()
 	)
 	{
 		start_game = 1;
+	}
+	
+	if (
+		mouse_x > surface.width * 0.5 - 160 - 64 &&
+		mouse_y > surface.height * 0.9 - 64 &&
+		mouse_x < surface.width * 0.5 - 160 + 64 &&
+		mouse_y < surface.height * 0.9 + 64
+	)
+	{
+		// alert('group!');
+		groupVK();
+	}
+	
+	if (
+		mouse_x > surface.width * 0.5 + 160 - 64 &&
+		mouse_y > surface.height * 0.9 - 64 &&
+		mouse_x < surface.width * 0.5 + 160 + 64 &&
+		mouse_y < surface.height * 0.9 + 64
+	)
+	{
+		// alert('share!');
+		shareVK();
 	}
 }
 
@@ -2674,6 +2705,26 @@ function paint()
 		case 'menu':
 		{
 			context.globalAlpha = 0.3;
+			
+			
+			// draw buttons
+			context.save();
+			context.translate(
+				surface.width * 0.5,
+				surface.height * 0.9
+			);
+			context.drawImage(
+				tex['group'],
+				-160 - 64,
+				-64
+			);
+			context.drawImage(
+				tex['share'],
+				160 - 64,
+				-64
+			);
+			context.restore();
+			
 			context.save();
 			context.translate(
 				surface.width * 0.5,
@@ -2992,6 +3043,20 @@ function showAd()
 	vkBridge.send("VKWebAppShowNativeAds", {ad_format:"preloader"})
 	.then(data => console.log(data.result))
 	.catch(error => console.log(error));
+}
+
+function groupVK()
+{
+	vkBridge.send("VKWebAppJoinGroup", {"group_id": 203816953})
+	.then(data => console.log(data.result))
+	.catch(error => console.log(error));
+}
+
+function shareVK()
+{
+	vkBridge.send("VKWebAppShowInviteBox", {})
+    .then(data => console.log(data.success))
+    .catch(error => console.log(error));
 }
 
 
