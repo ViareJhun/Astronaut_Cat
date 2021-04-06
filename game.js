@@ -3047,9 +3047,11 @@ function showAd()
 
 function groupVK()
 {
-	vkBridge.send("VKWebAppJoinGroup", {"group_id": 203816953})
+	vkBridge.send("VKWebAppJoinGroup", {"group_id": 203816953});
+	/*
 	.then(data => console.log(data.result))
 	.catch(error => console.log(error));
+	*/
 }
 
 function shareVK()
