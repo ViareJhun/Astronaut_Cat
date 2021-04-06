@@ -85,6 +85,14 @@ function loadTextures()
 	tex_path['back'] = 'img/back.png';
 	tex_path['bstart'] = 'img/bstart.png';
 	
+	tex_path['catlogo1'] = 'img/catlogo1.png';
+	tex_path['catlogo2'] = 'img/catlogo2.png';
+	
+	tex_path['logoname'] = 'img/logoname.png';
+	
+	tex_path['hpdown'] = 'img/hpdown.png';
+	tex_path['hpup'] = 'img/hpup.png';
+	
 	Object.keys(tex_path).forEach(
 		(item) =>
 		{
@@ -248,6 +256,20 @@ function mouseUp()
 			menuMouseUp();
 		}
 		break
+		
+		case 'game':
+		{
+			if (
+				mouse_x > surface.width - 128 &&
+				mouse_y > 0 &&
+				mouse_x < surface.width &&
+				mouse_y < 48
+			)
+			{
+				gotoMenu();
+			}
+		}
+		break
 	}
 }
 
@@ -341,7 +363,7 @@ function menuMouseUp()
 			mouse_x,
 			mouse_y,
 			surface.width * 0.5,
-			surface.height * 0.5
+			surface.height * 0.7
 		) < 128
 	)
 	{
@@ -377,6 +399,8 @@ function CreatePlayer()
 	this.bullet_spread = Math.PI * 0.01;
 	this.bullets = 1;
 	this.radius = 30;
+	this.hp_max = 5;
+	this.hp = 4;
 	
 	
 	this.upd = () =>
@@ -777,6 +801,34 @@ function Spawner()
 			0,
 			48
 		);
+		
+		// HP
+		context.globalAlpha = 1.0;
+		context.save();
+		context.translate(
+			4,
+			96 + 4
+		);
+		
+		for (var i = 0; i < player.hp_max; i ++)
+		{
+			context.drawImage(
+				tex['hpdown'],
+				i * 38,
+				0
+			);
+		}
+		for (var i = 0; i < player.hp; i ++)
+		{
+			context.drawImage(
+				tex['hpup'],
+				i * 38,
+				0
+			);
+		}
+		
+		context.restore();
+		context.globalAlpha = 0.4;
 		
 		// Меню
 		txt = 'меню';
@@ -1662,7 +1714,7 @@ function update()
 						mouse_x,
 						mouse_y,
 						surface.width * 0.5,
-						surface.height * 0.5
+						surface.height * 0.7
 					) < 128
 				)
 				{
@@ -1811,7 +1863,7 @@ function paint()
 			context.save();
 			context.translate(
 				surface.width * 0.5,
-				surface.height * 0.5
+				surface.height * 0.7
 			);
 			context.scale(
 				bstart_scale,
@@ -1824,6 +1876,89 @@ function paint()
 			);
 			context.restore();
 			context.globalAlpha = 1.0;
+			
+			var x = surface.width * 0.5;
+			var y = 240;
+			
+			context.save();
+			context.translate(
+				x,
+				y
+			);
+			context.scale(
+				1.75 + Math.abs(Math.sin(T2 * 0.1)) * 0.5,
+				1.75 + Math.abs(Math.sin(T2 * 0.1)) * 0.5,
+			);
+			context.rotate(
+				Math.cos(T2 * 0.35) * Math.PI * 0.05
+			);
+			context.drawImage(
+				tex['catlogo1'],
+				-64,
+				-64
+			);
+			context.restore();
+			
+			context.save();
+			context.translate(
+				x,
+				y + 96
+			);
+			context.scale(
+				1.5 + Math.abs(Math.cos(T2 * 0.05)) * 0.5,
+				1.5 + Math.abs(Math.cos(T2 * 0.05)) * 0.5,
+			);
+			context.rotate(
+				Math.sin(T2 * 0.55) * Math.PI * 0.05
+			);
+			context.drawImage(
+				tex['catlogo2'],
+				-64,
+				-64
+			);
+			context.restore();
+			
+			// LOGO NAME
+			
+			context.globalAlpha = 0.5;
+			context.save();
+			context.translate(
+				x,
+				y - 80
+			);
+			context.scale(
+				0.75 + Math.abs(Math.sin(1 + T2 * 0.1)) * 0.22,
+				0.75 + Math.abs(Math.sin(1 + T2 * 0.1)) * 0.22,
+			);
+			context.rotate(
+				Math.cos(T2 * 0.58 - 0.4) * Math.PI * 0.05
+			);
+			context.drawImage(
+				tex['logoname'],
+				-256,
+				-256
+			);
+			context.restore();
+			context.globalAlpha = 1.0;
+			
+			context.save();
+			context.translate(
+				x,
+				y - 80
+			);
+			context.scale(
+				0.75 + Math.abs(Math.sin(1 + T2 * 0.1)) * 0.25,
+				0.75 + Math.abs(Math.sin(1 + T2 * 0.1)) * 0.25,
+			);
+			context.rotate(
+				Math.cos(T2 * 0.58) * Math.PI * 0.05
+			);
+			context.drawImage(
+				tex['logoname'],
+				-256,
+				-256
+			);
+			context.restore();
 		}
 		break
 	}
@@ -1837,6 +1972,11 @@ function vkInit()
 {
 	vkBridge.send('VKWebAppInit');
 	
+	showAd();
+}
+
+function showAd()
+{
 	vkBridge.send("VKWebAppShowNativeAds", {ad_format:"preloader"})
 	.then(data => console.log(data.result))
 	.catch(error => console.log(error));
