@@ -68,12 +68,22 @@ function loadTextures()
 	tex_path['shooter4'] = 'img/shooter4.png';
 	tex_path['shooter5'] = 'img/shooter5.png';
 	
+	tex_path['big0'] = 'img/big0.png';
+	tex_path['big1'] = 'img/big1.png';
+	tex_path['big2'] = 'img/big2.png';
+	tex_path['big3'] = 'img/big3.png';
+	
 	tex_path['ebullet1'] = 'img/ebullet1.png';
 	
 	tex_path['bullet1d0'] = 'img/bullet1d0.png';
 	tex_path['bullet1d1'] = 'img/bullet1d1.png';
 	tex_path['bullet1d2'] = 'img/bullet1d2.png';
 	tex_path['bullet1d3'] = 'img/bullet1d3.png';
+	
+	tex_path['bullet2d0'] = 'img/bullet2d0.png';
+	tex_path['bullet2d1'] = 'img/bullet2d1.png';
+	tex_path['bullet2d2'] = 'img/bullet2d2.png';
+	tex_path['bullet2d3'] = 'img/bullet2d3.png';
 	
 	tex_path['bmenu_main'] = 'img/bmenu_main.png';
 	tex_path['bmenu_glow'] = 'img/bmenu_glow.png';
@@ -83,6 +93,8 @@ function loadTextures()
 	tex_path['level_bar'] = 'img/level_bar.png';
 	
 	tex_path['back'] = 'img/back.png';
+	tex_path['back2'] = 'img/back2.png';
+	tex_path['back3'] = 'img/back3.png';
 	tex_path['bstart'] = 'img/bstart.png';
 	
 	tex_path['catlogo1'] = 'img/catlogo1.png';
@@ -92,6 +104,21 @@ function loadTextures()
 	
 	tex_path['hpdown'] = 'img/hpdown.png';
 	tex_path['hpup'] = 'img/hpup.png';
+	
+	tex_path['fool'] = 'img/fool.png';
+	tex_path['button3'] = 'img/button3.png';
+	
+	tex_path['powerup'] = 'img/powerup.png';
+	tex_path['bonus_hp'] = 'img/bonus_hp.png';
+	tex_path['bonus_rate'] = 'img/bonus_rate.png';
+	tex_path['bonus_skull'] = 'img/bonus_skull.png';
+	tex_path['bonus_bullet'] = 'img/bonus_bullet.png';
+	
+	tex_path['particle1'] = 'img/particle1.png';
+	tex_path['particle2'] = 'img/particle2.png';
+	tex_path['particle3'] = 'img/particle3.png';
+	tex_path['particle4'] = 'img/particle4.png';
+	tex_path['particle5'] = 'img/particle5.png';
 	
 	Object.keys(tex_path).forEach(
 		(item) =>
@@ -223,6 +250,11 @@ function testButtons()
 var DEBUG = 0;
 var PAUSE = 0;
 var testvar = 0;
+var score = 0;
+var score_draw = 0;
+var max_score = 0;
+var is_lose = 0;
+var back_tex = choose(['back', 'back', 'back', 'back2', 'back3']);
 
 var game_state = 'menu';
 
@@ -239,6 +271,9 @@ function startGame()
 	player = new CreatePlayer();
 	spawn = new Spawner();
 	game_state = 'game';
+	is_lose = 0;
+	score_draw = 0;
+	score = 0;
 }
 
 function gotoMenu()
@@ -246,6 +281,39 @@ function gotoMenu()
 	clearObjects();
 	game_state = 'menu';
 	start_game = 0;
+	
+	back_tex = choose(['back', 'back', 'back', 'back2', 'back3']);
+	
+	max_score = localStorage.getItem('AsCatScore');
+	if (max_score == null)
+	{
+		max_score = 0;
+	}
+}
+
+function loosing()
+{
+	clearObjects();
+	
+	if (score > max_score)
+	{
+		max_score = score;
+		localStorage.setItem('AsCatScore', max_score);
+	}
+	
+	game_state = 'lose';
+	
+	ship_x = -32;
+	ship_time = ship_time_max;
+	ship_catch = 0;
+	
+	l_score = 0;
+	l_score_draw = 0;
+	l_score_time = l_score_time_max;
+	
+	l_balpha = 0;
+	l_bscale = 1;
+	l_tomenu = 0;
 }
 
 function mouseUp()
@@ -268,6 +336,22 @@ function mouseUp()
 			)
 			{
 				gotoMenu();
+			}
+		}
+		break
+		
+		case 'lose':
+		{
+			if (
+				distance(
+					mouse_x,
+					mouse_y,
+					l_bx,
+					l_by
+				) < 64 && l_balpha > 0.6
+			)
+			{
+				l_tomenu = 1;
 			}
 		}
 		break
@@ -372,6 +456,22 @@ function menuMouseUp()
 	}
 }
 
+// L
+var ship_time_max = 60 * 6;
+var ship_time = ship_time_max;
+var ship_x = -32;
+var ship_catch = 0;
+var l_score = 0;
+var l_score_draw = 0;
+var l_score_speed = 0.4;
+var l_score_time_max = 60 * 3;
+var l_score_time = l_score_time_max;
+var l_balpha = 0;
+var l_bx = surface.width * 0.5;
+var l_by = surface.height * 0.75;
+var l_bscale = 1;
+var l_tomenu = 0;
+
 // Timers
 var T1 = Math.random() * Math.PI * 2.0;
 var T2 = Math.random() * Math.PI * 2.0;
@@ -401,7 +501,8 @@ function CreatePlayer()
 	this.bullets = 1;
 	this.radius = 30;
 	this.hp_max = 5;
-	this.hp = 4;
+	this.hp = this.hp_max;
+	this.rage = 0;
 	
 	
 	this.upd = () =>
@@ -409,20 +510,39 @@ function CreatePlayer()
 		// Shooting
 		if (!PAUSE)
 		{
+			if (this.rage > 0)
+			{
+				this.rage --;
+			}
+			
 			if (mouse_check)
 			{
 				if (this.reload == 0)
 				{
 					this.reload = this.reload_max;
 					
-					for (var i = 0; i < this.bullets; i ++)
+					var N = this.bullets;
+					var SP = this.bullet_spread;
+					
+					if (this.rage)
+					{
+						this.reload = 6;
+						N = 4;
+						if (this.bullets == N)
+						{
+							N = 6;
+						}
+						SP = Math.PI * 0.06;
+					}
+					
+					for (var i = 0; i < N; i ++)
 					{
 						bullets.push(
 							new PlayerBullet(
 								this.x,
 								this.y - this.half_height,
 								3.5,
-								Math.PI * 0.5 + Math.random() * this.bullet_spread * choose([-1, 1])
+								Math.PI * 0.5 + Math.random() * SP * choose([-1, 1])
 							)
 						);
 					};
@@ -452,6 +572,11 @@ function CreatePlayer()
 			this.anim = 0;
 		}
 		this.texture = this.anims[Math.floor(this.anim)];
+		
+		if (this.hp <= 0)
+		{
+			is_lose = 1;
+		}
 	};
 	
 	this.draw = () =>
@@ -582,47 +707,62 @@ function clearEnemies()
 
 function Spawner()
 {
+	// Bonuses
+	this.bonus_time_max = 60 * 15;
+	this.bonus_time = this.bonus_time_max;
+	
+	this.bonus_text_time_max = 60 * 5;
+	this.bonus_text_time = 0;
+	this.bonus_text = '';
+	
+	this.liveBonus = 0;
+	this.bonus = 'bonus_hp';
+	this.bonus_x = 0;
+	this.bonus_y = 0;
+	this.bonus_radius = 32;
+	
+	
 	this.level = 0;
 	
 	this.progress = 0;
 	this.progress_max = 100;
 	
-	this.progress_speed = 0.05;
+	this.progress_speed = 0.100;
 	
 	this.speeds = [
-		0.060,
+		0.100,
+		0.090,
+		0.070,
 		0.050,
-		0.040,
 		0.035,
 		0.030,
 		0.026,
-		0.022,
 		0.018,
 		0.016,
 		0.015
 	];
 	
 	// Bot
-	this.bot_spawn_max = 120;
+	this.bot_spawn_max = 90;
 	this.bot_spawn = irandom(this.bot_spawn_max);
 	
 	this.bot_diff = 1.0;
 	
 	this.bots_diffs = [
 		1.0,
-		0.7,
-		0.7,
-		0.7,
+		1.0,
+		0.5,
+		0.3,
+		0.6,
 		0.5,
 		0.4,
-		0.3,
 		0.3,
 		0.2,
 		0.15
 	];
 	
 	// Ram
-	this.ram_max = 300;
+	this.ram_max = 250;
 	this.ram = irandom(this.ram_max);
 	
 	this.ram_diff_start = 0.5;
@@ -634,15 +774,18 @@ function Spawner()
 		1.0,
 		1.0,
 		1.0,
+		1.0,
 		0.8,
 		0.5,
 		0.3,
+		0.2,
+		0.2,
 		0.2,
 		0.1
 	];
 	
 	// Shooter
-	this.sh_max = 200;
+	this.sh_max = 130;
 	this.sh = irandom(this.sh_max);
 	
 	this.sh_diff = 1.0;
@@ -653,11 +796,38 @@ function Spawner()
 		1.0,
 		1.0,
 		1.0,
+		1.0,
+		1.0,
+		1.0,
+		0.8,
+		0.6,
+		0.5,
+		0.4,
+		0.4,
+		0.4,
+		0.2,
+		0.15
+	];
+	
+	// BigBot
+	this.big_max = 200;
+	this.big = irandom(this.big_max);
+	
+	this.big_diff = 1.0;
+	
+	this.big_diffs = [
+		1.0,
+		1.0,
+		1.0,
+		1.0,
+		1.0,
 		0.9,
 		0.8,
 		0.7,
 		0.6,
-		0.5
+		0.5,
+		0.4,
+		0.3
 	];
 	
 	
@@ -665,6 +835,149 @@ function Spawner()
 	{
 		if (!PAUSE)
 		{
+			// Bonuses
+			if (this.bonus_time > 0)
+			{
+				this.bonus_time --;
+			}
+			else
+			{
+				if (!this.liveBonus)
+				{
+					this.bonus = choose(
+						[
+							'powerup',
+							'bonus_skull'
+						]
+					);
+					
+					this.bonus_x = 32 + irandom(surface.width - 64);
+					this.bonus_y = -32;
+					
+					// HP
+					if (player.hp < player.hp_max)
+					{
+						var chance = 45;
+						
+						if (player.hp <= player.hp_max * 0.5)
+						{
+							chance = 75;
+						}
+						
+						if (irandom(99) < chance)
+						{
+							this.bonus = 'bonus_hp';
+						}
+					}
+					
+					// rate & bullet
+					if (this.level >= 4 && player.bullets == 1)
+					{
+						this.bonus = 'bonus_bullet';
+					}
+					
+					if (this.level >= 6 && player.reload_max > 11)
+					{
+						this.bonus = 'bonus_rate';
+					}
+					
+					if (this.level >= 7 && player.reload_max > 9)
+					{
+						this.bonus = 'bonus_rate';
+					}
+					
+					if (this.level >= 8 && player.bullets == 2)
+					{
+						this.bonus = 'bonus_bullet';
+					}
+					
+					if (this.level >= 10 && player.bullets == 3)
+					{
+						this.bonus = 'bonus_bullet';
+					}
+					
+					if (this.level >= 11 && player.reload_max > 7)
+					{
+						this.bonus = 'bonus_rate';
+					}
+					
+					this.liveBonus = 1;
+				}
+				else
+				{
+					this.bonus_y += 2.5;
+					
+					if (this.bonus_y > surface.height + 32)
+					{
+						this.liveBonus = 0;
+						this.bonus_time = this.bonus_time_max;
+					}
+					
+					if (
+						distance(
+							this.bonus_x,
+							this.bonus_y,
+							player.x,
+							player.y
+						) < this.bonus_radius + player.radius
+					)
+					{
+						// SET Bonuses
+						switch (this.bonus)
+						{
+							case 'powerup':
+							{
+								player.rage = 120 * 4;
+								this.bonus_text = 'Временное безумие!';
+								this.bonus_text_time = this.bonus_text_time_max;
+							}
+							break
+							
+							case 'bonus_hp':
+							{
+								player.hp ++;
+								this.bonus_text = '+Здоровье!';
+								this.bonus_text_time = this.bonus_text_time_max;
+							}
+							break
+							
+							case 'bonus_rate':
+							{
+								player.reload_max -= 2;
+								this.bonus_text = 'Больше пуль!';
+								this.bonus_text_time = this.bonus_text_time_max;
+							}
+							break
+							
+							case 'bonus_bullet':
+							{
+								player.bullets ++;
+								player.bullet_spread += Math.PI * 0.02;
+								this.bonus_text = '+1 пуля!';
+								this.bonus_text_time = this.bonus_text_time_max;
+							}
+							break
+							
+							case 'bonus_skull':
+							{
+								enemies.forEach(
+									(enemy) =>
+									{
+										enemy.hp = 0;
+									}
+								);
+								this.bonus_text = 'Взрывная волна!';
+								this.bonus_text_time = this.bonus_text_time_max;
+							}
+							break
+						}
+						
+						this.bonus_time = this.bonus_time_max;
+						this.liveBonus = 0;
+					}
+				}
+			}
+			
 			// Progress
 			this.progress += this.progress_speed;
 			if (this.progress >= this.progress_max)
@@ -673,8 +986,10 @@ function Spawner()
 				this.level += 1;
 				this.progress_speed = this.speeds[Math.min(9, this.level)];
 			}
-			this.bot_diff = this.bots_diffs[Math.min(9, this.level)];
-			this.ram_diff = this.ram_diffs[Math.min(9, this.level)];
+			this.bot_diff = this.bots_diffs[Math.min(this.bots_diffs.length - 1, this.level)];
+			this.ram_diff = this.ram_diffs[Math.min(this.ram_diffs.length - 1, this.level)];
+			this.sh_diff = this.sh_diffs[Math.min(this.sh_diffs.length - 1, this.level)];
+			this.big_diff = this.big_diffs[Math.min(this.big_diffs.length - 1, this.level)];
 			
 			// Bot
 			if (this.bot_spawn > 0)
@@ -695,7 +1010,7 @@ function Spawner()
 			};
 			
 			// RamBot2
-			if (this.level >= 1)
+			if (this.level >= 3)
 			{
 				if (this.ram > 0)
 				{
@@ -715,7 +1030,7 @@ function Spawner()
 			};
 			
 			// Shooter
-			if (this.level >= 0)
+			if (this.level >= 5)
 			{
 				if (this.sh > 0)
 				{
@@ -733,17 +1048,65 @@ function Spawner()
 					);
 				};
 			};
+			
+			// BigBot
+			if (this.level >= 1)
+			{
+				if (this.big > 0)
+				{
+					this.big --;
+				}
+				else
+				{
+					this.big = this.big_max * this.big_diff;
+					
+					enemies.push(
+						new BigBot(
+							48 + irandom(surface.width - 96),
+							-32
+						)
+					);
+				};
+			};
 		};
 	};
 	
 	this.draw = () =>
 	{	
+		if (this.liveBonus)
+		{
+			context.save();
+			context.translate(
+				this.bonus_x,
+				this.bonus_y
+			);
+			context.scale(
+				0.75 + Math.abs(Math.sin(T1 * 0.5)) * 0.35,
+				0.75 + Math.abs(Math.sin(T1 * 0.5)) * 0.35,
+			);
+			context.drawImage(
+				tex[this.bonus],
+				-32,
+				-32
+			);
+			context.restore();
+		}
 		// Level
 		T1 += 0.05;
-		context.font = 'bold 25px "Press Start 2P"';
 		context.textAlign = 'left';
 		context.textBaseline = 'top';
 		context.fillStyle = '#C0E3F8';
+		
+		context.globalAlpha = 0.5;
+		context.font = 'bold 15px "Press Start 2P"';
+		score_draw = Math.min(score, score_draw + 5);
+		context.fillText(
+			'Очки:' + score_draw,
+			8,
+			136
+		);
+		context.globalAlpha = 1.0;
+		context.font = 'bold 25px "Press Start 2P"';
 		
 		context.globalAlpha = 0.4;
 		context.drawImage(
@@ -866,6 +1229,33 @@ function Spawner()
 			x + Math.cos(T1 * 1.35) * 4,
 			18 - Math.sin(T1 * 1.35) * 4
 		);
+		
+		// Бонусы
+		if (this.bonus_text_time > 0)
+		{
+			this.bonus_text_time --;
+			
+			context.font = '25px "Press Start 2P"';
+			context.textAlign = 'center';
+			context.textBaseline = 'middle';
+			
+			context.save();
+			context.translate(
+				surface.width * 0.5,
+				surface.height * 0.5
+			);
+			context.scale(
+				0.75 + Math.abs(Math.cos(T1 * 0.66)) * 0.5,
+				0.75 + Math.abs(Math.cos(T1 * 0.66)) * 0.5
+			);
+			context.fillText(
+				this.bonus_text,
+				0,
+				0
+			);
+			context.restore();
+		}
+		
 		context.globalAlpha = 1.0;
 	};
 }
@@ -929,11 +1319,112 @@ function RamBot(x, y)
 			
 			if (this.y > surface.height + 32)
 			{
+				player.hp --;
 				return 1;
 			}
 			
 			if (this.hp <= 0)
 			{
+				score += choose([10, 15]);
+				return 1;
+			}
+			
+			return 0;
+		}
+	};
+	
+	this.draw = () =>
+	{
+		context.save();
+		context.translate(
+			this.x,
+			this.y
+		);
+		context.drawImage(
+			tex[this.texture],
+			-this.half_width,
+			-this.half_height
+		);
+		
+		if (DEBUG)
+		{
+			context.strokeStyle = '#FF0000';
+			
+			context.beginPath();
+			context.arc(
+				0,
+				0,
+				this.radius,
+				0,
+				Math.PI * 2
+			);
+			context.stroke();
+		}
+		
+		context.restore();
+	};
+}
+
+function BigBot(x, y)
+{
+	this.x = x;
+	this.y = y;
+	this.type = 'enemy';
+	
+	this.hp_max = 6;
+	this.hp = this.hp_max;
+	
+	this.speed = 1.5;
+	this.angle = -Math.PI * 0.5;
+	
+	this.vecx = Math.cos(this.angle) * this.speed;
+	this.vecy = -Math.sin(this.angle) * this.speed;
+	
+	this.half_width = 32;
+	this.half_height = 32;
+	
+	this.radius = 30;
+	
+	this.texture = 'bot0';
+	
+	this.anim = 0;
+	this.anim_speed = 0.1;
+	this.anim_max = 4;
+	this.anims = [
+		'big0',
+		'big1',
+		'big2',
+		'big3'
+	];
+	
+	
+	this.upd = () =>
+	{
+		if (!PAUSE)
+		{
+			this.x += this.vecx;
+			this.y += this.vecy;
+			
+			this.vecx = Math.cos(this.angle) * this.speed;
+			this.vecy = -Math.sin(this.angle) * this.speed;
+			
+			this.anim += this.anim_speed;
+			if (this.anim >= this.anim_max)
+			{
+				this.anim = 0;
+			}
+			
+			this.texture = this.anims[Math.floor(this.anim)];
+			
+			if (this.y > surface.height + 32)
+			{
+				player.hp --;
+				return 1;
+			}
+			
+			if (this.hp <= 0)
+			{
+				score += choose([50, 55]);
 				return 1;
 			}
 			
@@ -1037,11 +1528,13 @@ function RamBot2(x, y)
 			
 			if (this.y > surface.height + 32)
 			{
+				player.hp --;
 				return 1;
 			}
 			
 			if (this.hp <= 0)
 			{
+				score += choose([70, 75]);
 				return 1;
 			}
 			
@@ -1192,11 +1685,13 @@ function Shooter(x, y)
 			
 			if (this.y > surface.height + 32)
 			{
+				player.hp --;
 				return 1;
 			}
 			
 			if (this.hp <= 0)
 			{
+				score += choose([60, 65]);
 				return 1;
 			}
 			
@@ -1550,6 +2045,7 @@ function EnemyBullet(x, y, speed, angle)
 				) <= player.radius + this.radius
 			)
 			{
+				player.hp --;
 				resul = 1;
 			}
 			
@@ -1558,7 +2054,7 @@ function EnemyBullet(x, y, speed, angle)
 				bullets.splice(
 					0,
 					0,
-					new Bullet1Destroy(
+					new Bullet2Destroy(
 						this.x,
 						this.y
 					)
@@ -1597,6 +2093,66 @@ function EnemyBullet(x, y, speed, angle)
 			);
 			context.stroke();
 		}
+		
+		context.restore();
+	}
+}
+
+function Bullet2Destroy(x, y)
+{
+	this.x = x;
+	this.y = y;
+	this.type = 'bullet';
+	
+	this.angle = Math.random() * Math.PI * 2.0;
+	
+	this.half_width = 32;
+	this.half_height = 32;
+	
+	this.anim = 0;
+	this.anim_max = 4;
+	this.anim_speed = 0.25;
+	
+	this.texture = 'bullet2d0';
+	
+	this.anims = [
+		'bullet2d0',
+		'bullet2d1',
+		'bullet2d2',
+		'bullet2d3'
+	];
+	
+	
+	this.upd = () =>
+	{
+		this.anim += this.anim_speed;
+		if (this.anim >= this.anim_max)
+		{
+			this.anim = 0;
+			return 1;
+		}
+		
+		this.texture = this.anims[Math.floor(this.anim)];
+		
+		return 0;
+	}
+	
+	this.draw = () =>
+	{
+		context.save();
+		
+		context.translate(
+			this.x,
+			this.y
+		);
+		
+		context.rotate(this.angle);
+		
+		context.drawImage(
+			tex[this.texture],
+			-this.half_width,
+			-this.half_height
+		);
 		
 		context.restore();
 	}
@@ -1650,6 +2206,75 @@ function BackStar(star, speed)
 	}
 }
 
+function Particle(x, y)
+{
+	this.img = choose(
+		[
+			'particle1',
+			'particle2',
+			'particle3',
+			'particle4',
+			'particle5'
+		]
+	);
+	
+	this.half_width = 8;
+	this.half_height = 8;
+	
+	this.x = x;
+	this.y = y;
+	
+	this.speed = choose([2, 3]);
+	this.friction = 0.1;
+	
+	this.angle = Math.random() * Math.PI * 2.0;
+	this.dir = Math.random() * Math.PI * 2.0;
+	this.angle_speed = Math.random() * 0.07 * choose([-1, 1]);
+	
+	this.vecx = Math.cos(this.dir) * this.speed;
+	this.vecy = -Math.sin(this.dir) * this.speed;
+	
+	
+	this.upd = () =>
+	{
+		this.x += this.vecx;
+		this.y += this.vecy;
+		
+		this.vecx = Math.cos(this.dir) * this.speed;
+		this.vecy = -Math.sin(this.dir) * this.speed;
+		
+		this.angle += this.angle_speed;
+		this.speed -= this.friction;
+		
+		if (this.speed <= 0)
+		{
+			return 1;
+		}
+		
+		return 0;
+	}
+	
+	this.draw = () =>
+	{
+		context.save();
+		context.translate(
+			this.x,
+			this.y
+		);
+		context.scale(
+			1,
+			1
+		);
+		context.rotate(this.angle);
+		context.drawImage(
+			tex[this.img],
+			-this.half_width,
+			-this.half_height
+		);
+		context.restore();
+	}
+}
+
 
 // Update
 function update()
@@ -1674,6 +2299,17 @@ function update()
 					{
 						case 1:
 						{
+							var n = 4 + irandom(3);
+							for (var i = 0; i < n; i ++)
+							{
+								back_objects.push(
+									new Particle(
+										obj.x,
+										obj.y
+									)
+								)
+							}
+							
 							var num = enemies.indexOf(obj);
 							delete enemies[num];
 							enemies.splice(num, 1);
@@ -1728,6 +2364,7 @@ function update()
 				if (start_game)
 				{
 					startGame();
+					score = 0;
 				}
 			}
 		}
@@ -1806,11 +2443,12 @@ function paint()
 	
 	update();
 	context.drawImage(
-		tex['back'],
+		tex[back_tex],
 		0,
 		0
 	);
 	
+	/*
 	context.textAlign = 'left';
 	context.textBaseline = 'top';
 	
@@ -1821,6 +2459,7 @@ function paint()
 		16,
 		surface.height - 32
 	);
+	*/
 	
 	if (back_show)
 	{
@@ -1971,10 +2610,198 @@ function paint()
 				-256
 			);
 			context.restore();
+			
+			context.fillStyle = '#FFFFFF';
+			context.font = 'bold 20px "Press Start 2P"';
+			context.textAlign = 'left';
+			context.textBaseline = 'top';
+			
+			context.fillText(
+				'Рекорд:' + max_score,
+				8,
+				8
+			);
+		}
+		break
+		
+		case 'lose':
+		{
+			if (ship_time > 0)
+			{
+				ship_time --;
+			}
+			else
+			{
+				if (ship_x < surface.width + 32)
+				{
+					ship_x += 7;
+				}
+				
+				if (
+					distance(
+						ship_x,
+						0,
+						surface.width * 0.5,
+						0
+					) < 8
+				)
+				{
+					ship_catch = 1;
+				}
+			}
+			
+			if (!ship_catch)
+			{
+				context.save();
+				context.translate(
+					surface.width * 0.5,
+					surface.height * 0.5
+				);
+				context.rotate(
+					T2 * 0.05
+				);
+				context.drawImage(
+					tex['fool'],
+					-32,
+					-32
+				);
+				context.restore();
+			}
+			
+			context.save();
+			context.translate(
+				ship_x,
+				surface.height * 0.5 - 16
+			);
+			context.rotate(
+				Math.PI * 0.5
+			);
+			context.drawImage(
+				tex['cat0'],
+				-32,
+				-32
+			);
+			context.restore();
+			
+			// Text
+			var txt1 = 'твой счёт:' + l_score_draw + '!';
+			if (l_score_time > 0)
+			{
+				l_score_time --;
+			}
+			else
+			{
+				if (l_score < txt1.length)
+				{
+					l_score += l_score_speed;
+				}
+				else
+				{
+					if (l_balpha < 1)
+					{
+						l_balpha += 0.02;
+					}
+					
+					if (l_score_draw < score)
+					{
+						l_score_draw += Math.max(1, Math.floor(score * 0.01));
+					}
+					else
+					{
+						l_score_draw = score;
+					}
+				}
+			}
+			var txt2 = txt1.slice(0, l_score);
+			
+			context.font = 'bold 30px "Press Start 2P"';
+			
+			context.textAlign = 'center';
+			context.textBaseline = 'middle';
+			
+			context.fillStyle = '#FFFFFF';
+			
+			context.save();
+			context.translate(
+				surface.width * 0.5,
+				surface.height * 0.37
+			);
+			context.rotate(
+				Math.sin(T2 * 0.14) * Math.PI * 0.05
+			);
+			context.fillText(
+				'Ты проиграл!',
+				0,
+				0
+			);
+			context.font = 'bold 15px "Press Start 2P"';
+			context.fillText(
+				txt2,
+				0,
+				32
+			);
+			context.restore();
+			
+			// Button
+			var temp_scale = 1;
+			if (mouse_check)
+			{
+				if (
+					distance(
+						mouse_x,
+						mouse_y,
+						l_bx,
+						l_by
+					) < 64
+				)
+				{
+					temp_scale = 0.75;
+				}
+			}
+			
+			l_bscale += (
+				temp_scale - l_bscale
+			) * 0.2;
+			
+			if (l_bscale > 0.95 && l_tomenu)
+			{
+				showAd();
+				gotoMenu();
+			}
+			
+			context.globalAlpha = 0.4 * l_balpha;
+			context.save();
+			context.translate(
+				l_bx,
+				l_by
+			);
+			context.scale(
+				l_bscale,
+				l_bscale
+			);
+			context.drawImage(
+				tex['button3'],
+				-64,
+				-64
+			)
+			context.font = 'bold 18px "Press Start 2P"';
+			context.fillText(
+				'в меню',
+				0,
+				0
+			);
+			context.restore();
+			
+			context.globalAlpha = 1;
 		}
 		break
 	}
 	
+	if (is_lose)
+	{
+		loosing();
+		is_lose = 0;
+	}
 	requestAnimationFrame(paint);
 }
 
@@ -1984,6 +2811,7 @@ function vkInit()
 {
 	vkBridge.send('VKWebAppInit');
 	
+	/*
 	testvar = localStorage.getItem('testvar');
 	if (testvar == null)
 	{
@@ -1991,6 +2819,7 @@ function vkInit()
 	}
 	testvar ++;
 	localStorage.setItem('testvar', testvar);
+	*/
 	
 	showAd();
 }
