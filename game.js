@@ -222,6 +222,7 @@ function testButtons()
 // Game
 var DEBUG = 0;
 var PAUSE = 0;
+var testvar = 0;
 
 var game_state = 'menu';
 
@@ -1810,6 +1811,17 @@ function paint()
 		0
 	);
 	
+	context.textAlign = 'left';
+	context.textBaseline = 'top';
+	
+	context.font = '10px monospace';
+	context.fillStyle = '#FFFFFF';
+	context.fillText(
+		'testvar=' + testvar,
+		16,
+		surface.height - 32
+	);
+	
 	if (back_show)
 	{
 		back_objects.forEach(
@@ -1971,6 +1983,14 @@ function paint()
 function vkInit()
 {
 	vkBridge.send('VKWebAppInit');
+	
+	testvar = localStorage.getItem('testvar');
+	if (testvar == null)
+	{
+		testvar = 0;
+	}
+	testvar ++;
+	localStorage.setItem('testvar', testvar);
 	
 	showAd();
 }
