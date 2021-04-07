@@ -247,6 +247,11 @@ function audioLoad()
 	}
 	*/
 	music.play();
+	
+	music.onended = () =>
+	{
+		music.play();
+	};
 }
 
 function sound_play(sound)
