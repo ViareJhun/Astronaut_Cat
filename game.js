@@ -363,6 +363,8 @@ var max_score = 0;
 var is_lose = 0;
 var back_tex = choose(['back', 'back', 'back', 'back2', 'back3']);
 
+var running = 0;
+
 var game_state = 'menu';
 
 function clearObjects()
@@ -3159,7 +3161,17 @@ function vkInit()
 	localStorage.setItem('testvar', testvar);
 	*/
 	
-	showAd();
+	running = localStorage.getItem('ACrun');
+	if (running == null)
+	{
+		running = 0;
+	}
+	running ++;
+	localStorage.setItem('ACrun', running);
+	if (running > 2)
+	{
+		showAd();
+	}
 }
 
 function showAd()
