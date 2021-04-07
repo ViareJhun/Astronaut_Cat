@@ -254,6 +254,14 @@ function audioLoad()
 	};
 }
 
+window.addEventListener(
+	'unload',
+	() =>
+	{
+		music.stop();
+	}
+)
+
 function sound_play(sound)
 {
 	snd[sound][snd_index[sound]].play();
@@ -447,9 +455,9 @@ function mouseUp()
 		{
 			if (
 				mouse_x > surface.width - 128 &&
-				mouse_y > 0 &&
+				mouse_y > 32 &&
 				mouse_x < surface.width &&
-				mouse_y < 48
+				mouse_y < 32 + 48
 			)
 			{
 				gotoMenu();
@@ -1403,7 +1411,7 @@ function Spawner()
 		context.drawImage(
 			tex['bmenu_back'],
 			surface.width - 128,
-			0
+			32
 		);
 		var x = surface.width - 64;
 		context.textAlign = 'center';
@@ -1414,24 +1422,24 @@ function Spawner()
 		context.fillText(
 			txt,
 			x + 2,
-			18
+			32 + 18
 		);
 		context.fillText(
 			txt,
 			x - 2,
-			18
+			32 + 18
 		);
 		context.globalAlpha = 1.0;
 		context.fillText(
 			txt,
 			x,
-			18
+			32 + 18
 		);
 		context.globalAlpha = 0.5;
 		context.fillText(
 			txt,
 			x + Math.cos(T1 * 1.35) * 4,
-			18 - Math.sin(T1 * 1.35) * 4
+			32 + 18 - Math.sin(T1 * 1.35) * 4
 		);
 		
 		// Бонусы
@@ -3168,7 +3176,7 @@ function vkInit()
 	}
 	running ++;
 	localStorage.setItem('ACrun', running);
-	if (running > 2)
+	if (running > 1)
 	{
 		showAd();
 	}
