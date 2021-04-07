@@ -416,6 +416,10 @@ function gotoMenu()
 
 function loosing()
 {
+	if (running % 2 != 0)
+	{
+		showAd();
+	}
 	clearObjects();
 	
 	sound_play('lose');
