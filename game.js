@@ -3117,7 +3117,10 @@ function paint()
 			
 			if (l_bscale > 0.95 && l_tomenu)
 			{
-				showAd();
+				if (irandom(10) < 5)
+				{
+					showAd();
+				}
 				gotoMenu();
 			}
 			
