@@ -161,6 +161,104 @@ function setScreen()
 	surface.style.position = 'fixed';
 }
 
+// Audio
+var audioLoaded = 0;
+
+var snd_path = [];
+var snd = [];
+var snd_index = [];
+
+var music = new Audio();
+
+function audioLoad()
+{
+	snd_path['lose'] = 'snd/lose.ogg';
+	snd_path['bonus'] = 'snd/bonus.ogg';
+	snd_path['shooting'] = 'snd/shooting.ogg';
+	snd_path['enemy_hurt'] = 'snd/enemy_hurt.ogg';
+	snd_path['enemy_death'] = 'snd/enemy_death.ogg';
+	snd_path['enemy_shoot'] = 'snd/enemy_shoot.ogg';
+	
+	Object.keys(snd_path).forEach(
+		(key) =>
+		{
+			snd[key] = [null, null, null];
+			for (var i = 0; i < 6; i ++)
+			{
+				snd[key][i] = new Audio();
+				snd[key][i].src = snd_path[key];
+			}
+			snd_index[key] = 0;
+		}
+	);
+	
+	Object.keys(snd).forEach(
+		(item) =>
+		{
+			snd[item].forEach(
+				(aud) =>
+				{
+					switch (item)
+					{
+						case 'shooting':
+						{
+							aud.volume = 0.2;
+						}
+						break
+						case 'lose':
+						{
+							aud.volume = 0.5;
+						}
+						break
+						case 'bonus':
+						{
+							aud.volume = 0.5;
+						}
+						break
+						case 'enemy_hurt':
+						{
+							aud.volume = 0.4;
+						}
+						break
+						case 'enemy_death':
+						{
+							aud.volume = 0.3;
+						}
+						break
+						case 'enemy_shoot':
+						{
+							aud.volume = 0.5;
+						}
+						break
+					}
+				}
+			);
+		}
+	);
+	
+	music.src = 'mus.ogg';
+	music.volume = 0.2;
+	//music.play();
+	
+	/*
+	music.onload = () =>
+	{
+		music.play();
+	}
+	*/
+	music.play();
+}
+
+function sound_play(sound)
+{
+	snd[sound][snd_index[sound]].play();
+	snd_index[sound] ++;
+	if (snd_index[sound] > 5)
+	{
+		snd_index[sound] = 0;
+	}
+}
+
 
 // Utils
 function irandom(val)
@@ -304,6 +402,8 @@ function gotoMenu()
 function loosing()
 {
 	clearObjects();
+	
+	sound_play('lose');
 	
 	if (score > max_score)
 	{
@@ -535,6 +635,7 @@ function CreatePlayer()
 	this.hp_max = 5;
 	this.hp = this.hp_max;
 	this.rage = 0;
+	this.snd_index = 0;
 	
 	
 	this.upd = () =>
@@ -552,6 +653,13 @@ function CreatePlayer()
 				if (this.reload == 0)
 				{
 					this.reload = this.reload_max;
+					
+					snd['shooting'][this.snd_index].play();
+					this.snd_index ++;
+					if (this.snd_index > 5)
+					{
+						this.snd_index = 0;
+					}
 					
 					var N = this.bullets;
 					var SP = this.bullet_spread;
@@ -966,6 +1074,9 @@ function Spawner()
 					)
 					{
 						// SET Bonuses
+						
+						snd['bonus'][0].play();
+						
 						switch (this.bonus)
 						{
 							case 'powerup':
@@ -1494,6 +1605,7 @@ function RamBot(x, y)
 				spawn.texts.push(
 					[60, 2.5, this.x, this.y, '+' + temp]
 				);
+				sound_play('enemy_death');
 				return 1;
 			}
 			
@@ -1600,6 +1712,7 @@ function BigBot(x, y)
 				spawn.texts.push(
 					[60, 2.5, this.x, this.y, '+' + temp]
 				);
+				sound_play('enemy_death');
 				return 1;
 			}
 			
@@ -1723,6 +1836,7 @@ function RamBot2(x, y)
 				spawn.texts.push(
 					[60, 2.5, this.x, this.y, '+' + temp]
 				);
+				sound_play('enemy_death');
 				return 1;
 			}
 			
@@ -1834,6 +1948,8 @@ function Shooter(x, y)
 				{
 					this.shoot_state = 1;
 					
+					sound_play('enemy_shoot');
+					
 					bullets.push(
 						new EnemyBullet(
 							this.x,
@@ -1885,6 +2001,7 @@ function Shooter(x, y)
 				spawn.texts.push(
 					[60, 2.5, this.x, this.y, '+' + temp]
 				);
+				sound_play('enemy_death');
 				return 1;
 			}
 			
@@ -2037,6 +2154,8 @@ function PlayerBullet(x, y, speed, angle)
 						enemy.hp --;
 						enemy.mask_alpha = 1.0;
 						resul = 1;
+						
+						sound_play('enemy_hurt');
 					}
 				}
 			)
@@ -3065,6 +3184,7 @@ function shareVK()
 // Start
 vkInit();
 
+audioLoad();
 loadTextures();
 starCreate();
 setScreen();
